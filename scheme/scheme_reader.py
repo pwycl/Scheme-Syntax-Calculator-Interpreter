@@ -121,10 +121,10 @@ def scheme_read(src):
     >>> src = Buffer(tokenize_lines(lines))
     >>> print(scheme_read(src))
     (+ 1 (+ 23 4))
-    >>> read_line("'hello")
-    Pair('quote', Pair('hello', nil))
     >>> print(read_line("(car '(1 2))"))
     (car (quote (1 2)))
+    >>> read_line("'hello")
+    Pair('quote', Pair('hello', nil))
     """
     if src.current() is None:
         raise EOFError
@@ -135,6 +135,7 @@ def scheme_read(src):
         return val
     elif val == "'":
         "*** YOUR CODE HERE ***"
+        return Pair('quote',Pair(scheme_read(src),nil))
     elif val == "(":
         return read_tail(src)
     else:
@@ -168,7 +169,15 @@ def read_tail(src):
             return nil
         "*** YOUR CODE HERE ***"
         first = scheme_read(src)
-        rest = read_tail(src)
+        if src.current()=='.':
+            src.pop()
+            rest=scheme_read(src)
+            if src.current()!=')':
+                raise SyntaxError('Expected one element after .')
+            else:
+                src.pop()
+        else:
+            rest = read_tail(src)
         return Pair(first, rest)
     except EOFError:
         raise SyntaxError("unexpected end of file")
