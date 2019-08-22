@@ -75,6 +75,15 @@ def apply_primitive(procedure, args, env):
     4
     """
     "*** YOUR CODE HERE ***"
+    python_args=list(args)
+    if procedure.use_env:
+        python_args.append(env)
+    try:
+        res=procedure.fn(*python_args)
+    except TypeError:
+        raise SchemeError('')
+    return res
+
 
 ################
 # Environments #
@@ -98,6 +107,11 @@ class Frame:
     def lookup(self, symbol):
         """Return the value bound to SYMBOL.  Errors if SYMBOL is not found."""
         "*** YOUR CODE HERE ***"
+        if symbol in self.bindings:
+            return self.bindings[symbol]
+        else:
+            return self.parent.lookup(symbol)
+
         raise SchemeError("unknown identifier: {0}".format(str(symbol)))
 
 
@@ -185,6 +199,12 @@ def do_lambda_form(vals, env):
     formals = vals[0]
     check_formals(formals)
     "*** YOUR CODE HERE ***"
+    body=vals.second
+    if len(body)>1:
+        body=Pair('begin',body)
+    else:
+        body=body.first
+    return LambdaProcedure(formals,body,env)
 
 def do_mu_form(vals):
     """Evaluate a mu form with parameters VALS."""
@@ -200,8 +220,14 @@ def do_define_form(vals, env):
     if scheme_symbolp(target):
         check_form(vals, 2, 2)
         "*** YOUR CODE HERE ***"
+        env.bindings[target]=scheme_eval(vals[1],env)
+        return target
     elif isinstance(target, Pair):
         "*** YOUR CODE HERE ***"
+        fn_name=target.first
+        vals.first=Pair(target.second.first,nil)
+        env.bindings[fn_name]=do_lambda_form(vals,env)
+        return fn_name
     else:
         raise SchemeError("bad argument to define")
 
@@ -209,6 +235,7 @@ def do_quote_form(vals):
     """Evaluate a quote form with parameters VALS."""
     check_form(vals, 1, 1)
     "*** YOUR CODE HERE ***"
+    return vals.first
 
 
 def do_let_form(vals, env):
@@ -280,6 +307,11 @@ def do_begin_form(vals, env):
     """Evaluate begin form with parameters VALS in environment ENV."""
     check_form(vals, 1)
     "*** YOUR CODE HERE ***"
+    first,second=vals.first,vals.second
+    while second!=nil:
+        scheme_eval(first,env)
+        first,second=second.first,second.second
+    return first
 
 LOGIC_FORMS = {
         "and": do_and_form,
